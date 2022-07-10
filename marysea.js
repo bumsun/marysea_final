@@ -75,7 +75,6 @@ var cards_imgs = [457239046,
 
 var maryseaSessions = {}
 app.post('/api/maryseaSkill', async (req, res) => {
-
     var requestOut = getBaseResponseMarysea(req)
     var original_utterance = req.body.request.original_utterance.toLowerCase()
     console.log("original_utterance: " + original_utterance)
@@ -105,7 +104,8 @@ app.post('/api/maryseaSkill', async (req, res) => {
                 }
                 maryseaSessions[req.body.session.session_id] = {
                     "typeRequest": 2,
-                    "step": 0
+                    "step": 0,
+                    "game":1
                 }
                 return res.send(requestOut);
                 delete maryseaSessions[req.body.session.session_id]
@@ -166,13 +166,18 @@ app.post('/api/maryseaSkill', async (req, res) => {
             var sound = "<speaker audio=marusia-sounds/game-boot-1> ";
 
             console.log("sessionItem['category']: " + sessionItem['category'])
-            if (isCorrectAnswer && sessionItem['category'] < 21) {
-                sound = "<speaker audio=marusia-sounds/game-8-bit-coin-1>";
+
+            if(isCorrectAnswer){
                 if(sessionItem.hasOwnProperty('category')){
                     sessionItem['category'] += score
                 }else{
                     sessionItem['category'] = score
                 }
+            }
+            
+            if (isCorrectAnswer && sessionItem['category'] < 21) {
+                sound = "<speaker audio=marusia-sounds/game-8-bit-coin-1>";
+                
             }else{
                 var final_text = ""
                 if(sessionItem['category'] < 18){
@@ -187,11 +192,24 @@ app.post('/api/maryseaSkill', async (req, res) => {
                 if(sessionItem['category'] > 21){
                     final_text = "Очень жаль, ты проиграл"
                 }
-                requestOut.response = {
-                    "text": final_text,
-                    "tts": final_text,
-                    "end_session": true
+                if(sessionItem['category'] > 20){
+                    requestOut.response = {
+                        "text": final_text + " ("+sessionItem['category']+" очков)",
+                        "tts": final_text,
+                        "card": {
+                            "type": "BigImage",
+                            "image_id": cards_imgs[cardNumber]
+                        },
+                        "end_session": true
+                    }
+                }else{
+                    requestOut.response = {
+                        "text": final_text + " ("+sessionItem['category']+" очков)",
+                        "tts": final_text,
+                        "end_session": true
+                    }
                 }
+                
                 delete maryseaSessions[req.body.session.session_id]
                 return res.send(requestOut);
             }
@@ -201,7 +219,7 @@ app.post('/api/maryseaSkill', async (req, res) => {
 
             requestOut.response = {
                 
-                "text": cards[cardNumber],
+                "text": cards[cardNumber] + " ("+sessionItem['category']+" очков)",
                 "tts": cards[cardNumber],
                 "card": {
                     "type": "BigImage",
@@ -235,8 +253,8 @@ app.post('/api/maryseaSkill', async (req, res) => {
         var cardNumber = randomInteger(0,8)
         requestOut.response = {
             
-            "text": "Сейчас будем играть в игру двадцть одно. " + cards[cardNumber],
-            "tts": "Сейчас будем играть в игру двадцть одно. " + cards[cardNumber],
+            "text": "Сейчас будем играть в игру двадцать одно. " + " ("+cards_score[cardNumber]+" очков)",
+            "tts": "Сейчас будем играть в игру двадцать одно. " + cards[cardNumber],
             "card": {
                 "type": "BigImage",
                 "image_id": cards_imgs[cardNumber]
